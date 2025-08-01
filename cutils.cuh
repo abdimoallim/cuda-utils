@@ -47,3 +47,28 @@ __device__ __forceinline__ int next_power_of_two(int x) {
 __device__ __forceinline__ bool is_power_of_two(int x) {
   return x > 0 && (x & (x - 1)) == 0;
 }
+
+//////////////////////////////////////////////////
+//////////   global thread primitives   //////////
+//////////////////////////////////////////////////
+
+__device__ __forceinline__ int get_global_id() {
+  return blockIdx.x * blockDim.x + threadIdx.x;
+}
+
+__device__ __forceinline__ int get_global_size() {
+  return gridDim.x * blockDim.x;
+}
+
+__device__ __forceinline__ bool is_thread_valid(int n) {
+  return get_global_id() < n;
+}
+
+__device__ __forceinline__ void grid_stride_loop(int n, void (*func)(int)) {
+  int idx = get_global_id();
+  int stride = get_global_size();
+
+  for (int i = idx; i < n; i += stride) {
+    func(i);
+  }
+}
