@@ -21,6 +21,10 @@
     CUDA_CHECK(cudaDeviceSynchronize()); \
   } while(0)
 
+#define WARP_SIZE (1<<5)
+#define MAX_THREADS_PER_BLOCK (1<<10)
+#define MAX_GRID_SIZE ((1<<16)-1)
+
 #define DIV_CEIL(a, b) (((a) + (b) - 1) / (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -71,4 +75,20 @@ __device__ __forceinline__ void grid_stride_loop(int n, void (*func)(int)) {
   for (int i = idx; i < n; i += stride) {
     func(i);
   }
+}
+
+/////////////////////////////////////////
+///////////   warp-level ops   //////////
+/////////////////////////////////////////
+
+__device__ __forceinline__ int get_warp_id() {
+  return threadIdx.x / WARP_SIZE;
+}
+
+__device__ __forceinline__ int get_lane_id() {
+  return threadIdx.x & (WARP_SIZE - 1);
+}
+
+__device__ __forceinline__ bool is_warp_leader() {
+  return get_lane_id() == 0;
 }
