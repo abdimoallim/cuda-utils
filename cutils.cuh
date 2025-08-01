@@ -146,3 +146,53 @@ __device__ __forceinline__ int warp_reduce_min(int val) {
 
   return val;
 }
+
+/////////////////////////////////////////////////////////
+//////////   block-level reduction primitives   /////////
+/////////////////////////////////////////////////////////
+
+template<typename T>
+__device__ __forceinline__ T block_reduce_sum(T val) {
+  __shared__ T warp_sums[MAX_THREADS_PER_BLOCK / WARP_SIZE];
+
+  int warp_id = get_warp_id();
+  int lane_id = get_lane_id();
+
+  val = warp_reduce_sum(val);
+
+  if (lane_id == 0) {
+    warp_sums[warp_id] = val;
+  }
+
+  __syncthreads();
+
+  if (warp_id == 0) {
+    val = (lane_id < blockDim.x / WARP_SIZE) ? warp_sums[lane_id] : T(0);
+    val = warp_reduce_sum(val);
+  }
+
+  return val;
+}
+
+template<typename T>
+__device__ __forceinline__ T block_reduce_max(T val) {
+  __shared__ T warp_maxs[MAX_THREADS_PER_BLOCK / WARP_SIZE];
+
+  int wid = get_warp_id();
+  int lid = get_lane_id();
+
+  val = warp_reduce_max(val);
+
+  if (lid == 0) {
+    warp_maxs[wid] = val;
+  }
+
+  __syncthreads();
+
+  if (wid == 0) {
+    val = (lid < blockDim.x / WARP_SIZE) ? warp_maxs[lid] : val;
+    val = warp_reduce_max(val);
+  }
+
+  return val;
+}
