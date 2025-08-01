@@ -155,19 +155,19 @@ template<typename T>
 __device__ __forceinline__ T block_reduce_sum(T val) {
   __shared__ T warp_sums[MAX_THREADS_PER_BLOCK / WARP_SIZE];
 
-  int warp_id = get_warp_id();
-  int lane_id = get_lane_id();
+  int wid = get_warp_id();
+  int lid = get_lane_id();
 
   val = warp_reduce_sum(val);
 
-  if (lane_id == 0) {
-    warp_sums[warp_id] = val;
+  if (lid == 0) {
+    warp_sums[wid] = val;
   }
 
   __syncthreads();
 
-  if (warp_id == 0) {
-    val = (lane_id < blockDim.x / WARP_SIZE) ? warp_sums[lane_id] : T(0);
+  if (wid == 0) {
+    val = (lid < blockDim.x / WARP_SIZE) ? warp_sums[lid] : T(0);
     val = warp_reduce_sum(val);
   }
 
@@ -228,4 +228,22 @@ __device__ __forceinline__ void coalesce_store(
   for (int i = tid; i < n; i += block_size) {
     global_mem[i] = shared_mem[i];
   }
+}
+
+inline void print_cuda_device_info() {
+  int device;
+  cudaGetDevice(&device);
+
+  cudaDeviceProp prop;
+  cudaGetDeviceProperties(&prop, device);
+
+  printf("Device %d: %s\n", device, prop.name);
+  printf("  Compute Capability: %d.%d\n", prop.major, prop.minor);
+  printf("  Max Threads per Block: %d\n", prop.maxThreadsPerBlock);
+  printf("  Max Grid Size: %d x %d x %d\n", prop.maxGridSize[0], prop.maxGridSize[1], prop.maxGridSize[2]);
+  printf("  Shared Memory per Block: %zu KB\n", prop.sharedMemPerBlock / 1024);
+  printf("  Total Global Memory: %.2f GB\n", prop.totalGlobalMem / (1024.0 * 1024.0 * 1024.0));
+  printf("  Memory Clock Rate: %.2f GHz\n", prop.memoryClockRate / 1e6);
+  printf("  Memory Bus Width: %d bits\n", prop.memoryBusWidth);
+  printf("  Warp Size: %d\n", prop.warpSize);
 }
