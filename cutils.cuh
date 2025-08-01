@@ -92,3 +92,57 @@ __device__ __forceinline__ int get_lane_id() {
 __device__ __forceinline__ bool is_warp_leader() {
   return get_lane_id() == 0;
 }
+
+/////////////////////////////////////////////////////////
+//////////   warp-level reduction primitives   //////////
+/////////////////////////////////////////////////////////
+
+// @todo: rewrite as explicit template instantiation with int & float
+
+__device__ __forceinline__ float warp_reduce_sum(float val) {
+  for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+    val += __shfl_down_sync(0xFFFFFFFF, val, offset);
+  }
+
+  return val;
+}
+
+__device__ __forceinline__ float warp_reduce_max(float val) {
+  for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+    val = fmaxf(val, __shfl_down_sync(0xFFFFFFFF, val, offset));
+  }
+
+  return val;
+}
+
+__device__ __forceinline__ float warp_reduce_min(float val) {
+  for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+    val = fminf(val, __shfl_down_sync(0xFFFFFFFF, val, offset));
+  }
+
+  return val;
+}
+
+__device__ __forceinline__ int warp_reduce_sum(int val) {
+  for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+    val += __shfl_down_sync(0xFFFFFFFF, val, offset);
+  }
+
+  return val;
+}
+
+__device__ __forceinline__ int warp_reduce_max(int val) {
+  for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+    val = max(val, __shfl_down_sync(0xFFFFFFFF, val, offset));
+  }
+
+  return val;
+}
+
+__device__ __forceinline__ int warp_reduce_min(int val) {
+  for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+    val = min(val, __shfl_down_sync(0xFFFFFFFF, val, offset));
+  }
+
+  return val;
+}
