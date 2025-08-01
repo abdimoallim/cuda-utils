@@ -196,3 +196,36 @@ __device__ __forceinline__ T block_reduce_max(T val) {
 
   return val;
 }
+
+/////////////////////////////////////////////////////////
+//////////   coalesced/cooperative load/store   /////////
+/////////////////////////////////////////////////////////
+
+template<typename T>
+__device__ __forceinline__ void coalesce_load(
+  T* shared_mem, const T* global_mem, int n) {
+  int tid = threadIdx.x;
+  int block_size = blockDim.x;
+
+  for (int i = tid; i < n; i += block_size) {
+    shared_mem[i] = global_mem[i];
+  }
+
+  __syncthreads();
+}
+
+template<typename T>
+__device__ __forceinline__ void coalesce_store(
+  T* global_mem,
+  const T* shared_mem,
+  int n
+) {
+  int tid = threadIdx.x;
+  int block_size = blockDim.x;
+
+  __syncthreads();
+
+  for (int i = tid; i < n; i += block_size) {
+    global_mem[i] = shared_mem[i];
+  }
+}
