@@ -205,6 +205,39 @@ __device__ __forceinline__ T block_reduce_max(T val) {
   return val;
 }
 
+template<int BLOCK_SIZE>
+__device__ void block_scan_exclusive(float* data) {
+  int tid = threadIdx.x;
+
+  for (int stride = 1; stride < BLOCK_SIZE; stride *= 2) {
+    float tmp = 0;
+
+    if (tid >= stride) {
+      tmp = data[tid - stride];
+    }
+
+    __syncthreads();
+
+    if (tid >= stride) {
+      data[tid] += tmp;
+    }
+
+    __syncthreads();
+  }
+
+  for (int stride = BLOCK_SIZE / 2; stride > 0; stride /= 2) {
+    if (tid < stride) {
+      int left = 2 * tid + stride;
+      int right = left + stride;
+      if (right < BLOCK_SIZE) {
+        data[right] += data[left];
+      }
+    }
+
+    __syncthreads();
+  }
+}
+
 /////////////////////////////////////////////////////////
 //////////   coalesced/cooperative load/store   /////////
 /////////////////////////////////////////////////////////
