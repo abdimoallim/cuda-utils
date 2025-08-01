@@ -41,6 +41,13 @@ __device__ __forceinline__ float smoothstep(float e0, float e1, float x) {
   return t * t * (3.0f - 2.0f * t);
 }
 
+template<typename T>
+__device__ __forceinline__ void swap(T& a, T& b) {
+  T temp = a;
+  a = b;
+  b = temp;
+}
+
 __device__ __forceinline__ bool approx_equal(float a, float b, float epsilon = 1e-6f) {
   return fabsf(a - b) < epsilon;
 }
