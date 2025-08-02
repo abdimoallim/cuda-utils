@@ -271,6 +271,55 @@ __device__ __forceinline__ void coalesce_store(
   }
 }
 
+////////////////////////////////////////////
+//////////   extended atomic ops   /////////
+////////////////////////////////////////////
+
+__device__ __forceinline__ float atomic_add_float(float* address, float val) {
+  return atomicAdd(address, val);
+}
+
+__device__ __forceinline__ double atomic_add_double(double* address, double val) {
+  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned long long int old = *address_as_ull, assumed;
+
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed,
+                    __double_as_longlong(val + __longlong_as_double(assumed)));
+  } while (assumed != old);
+
+  return __longlong_as_double(old);
+}
+
+__device__ __forceinline__ float atomic_max_float(float* address, float val) {
+  int* address_as_int = (int*)address;
+  int old = *address_as_int, assumed;
+
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_int, assumed,
+                    __float_as_int(fmaxf(val, __int_as_float(assumed))));
+  } while (assumed != old);
+
+  return __int_as_float(old);
+}
+
+__device__ __forceinline__ float atomic_min_float(float* address, float val) {
+  int* address_as_int = (int*)address;
+  int old = *address_as_int, assumed;
+
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_int, assumed,
+                    __float_as_int(fminf(val, __int_as_float(assumed))));
+  } while (assumed != old);
+
+  return __int_as_float(old);
+}
+
+/*misc*/
+
 inline void print_cuda_device_info() {
   int device;
   cudaGetDevice(&device);
