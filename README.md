@@ -85,7 +85,7 @@ Refer to the [source](/cutils.cuh).
 #### Launch configuration
 
 - `dim3 get_grid_size(int n, int block_size)` - Computes grid size respecting conventional hardware limits.
-- `dim3 get_optimal_launch_params(int n, int& block_size)` - Determines optimal block size and grid dimensions.
+- `dim3 get_launch_params(int n, int& block_size)` - Determines optimal block size and grid dimensions.
 
 #### Memory management
 
