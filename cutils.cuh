@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include <cstdio>
@@ -414,6 +416,65 @@ template<typename T>
 void cuda_memset(T* ptr, int value, size_t n) {
   CUDA_CHECK(cudaMemset(ptr, value, n * sizeof(T)));
 }
+
+//////////////////////////////////////////
+//////////   generic ptr type   //////////
+//////////////////////////////////////////
+
+template<typename T>
+class cuda_ptr {
+private:
+  T* ptr;
+
+public:
+  cuda_ptr() : ptr(nullptr) {}
+
+  explicit cuda_ptr(size_t n) {
+    CUDA_CHECK(cudaMalloc(&ptr, n * sizeof(T)));
+  }
+
+  ~cuda_ptr() {
+    if (ptr) {
+      cudaFree(ptr);
+    }
+  }
+
+  cuda_ptr(const cuda_ptr&) = delete;
+  cuda_ptr& operator=(const cuda_ptr&) = delete;
+
+  cuda_ptr(cuda_ptr&& other) noexcept : ptr(other.ptr) {
+    other.ptr = nullptr;
+  }
+
+  cuda_ptr& operator=(cuda_ptr&& other) noexcept {
+    if (this != &other) {
+      if (ptr) {
+        cudaFree(ptr);
+      }
+
+      ptr = other.ptr;
+      other.ptr = nullptr;
+    }
+
+    return *this;
+  }
+
+  T* get() const { return ptr; }
+  T* operator->() const { return ptr; }
+  T& operator*() const { return *ptr; }
+  operator T*() const { return ptr; }
+
+  void reset(size_t n = 0) {
+    if (ptr) {
+      cudaFree(ptr);
+      ptr = nullptr;
+    }
+
+    if (n > 0) {
+      CUDA_CHECK(cudaMalloc(&ptr, n * sizeof(T)));
+    }
+  }
+};
 
 /*misc*/
 
