@@ -363,7 +363,7 @@ inline dim3 get_grid_size(int n, int block_size) {
   int grid_size = DIV_CEIL(n, block_size);
 
   if (grid_size > MAX_GRID_SIZE) {
-      grid_size = MAX_GRID_SIZE;
+    grid_size = MAX_GRID_SIZE;
   }
 
   return dim3(grid_size);
@@ -378,6 +378,41 @@ inline dim3 get_launch_params(int n, int& block_size) {
   }
 
   return get_grid_size(n, block_size);
+}
+
+//////////////////////////////////////
+//////////   memory utils   //////////
+//////////////////////////////////////
+
+// @info: we use a generic type and wrap with CUDA_CHECK
+
+template<typename T>
+T* cuda_malloc(size_t n) {
+  T* ptr;
+  CUDA_CHECK(cudaMalloc(&ptr, n * sizeof(T)));
+  return ptr;
+}
+
+template<typename T>
+void cuda_free(T* ptr) {
+  if (ptr) {
+    CUDA_CHECK(cudaFree(ptr));
+  }
+}
+
+template<typename T>
+void cuda_memcpy_h2d(T* dst, const T* src, size_t n) {
+  CUDA_CHECK(cudaMemcpy(dst, src, n * sizeof(T), cudaMemcpyHostToDevice));
+}
+
+template<typename T>
+void cuda_memcpy_d2h(T* dst, const T* src, size_t n) {
+  CUDA_CHECK(cudaMemcpy(dst, src, n * sizeof(T), cudaMemcpyDeviceToHost));
+}
+
+template<typename T>
+void cuda_memset(T* ptr, int value, size_t n) {
+  CUDA_CHECK(cudaMemset(ptr, value, n * sizeof(T)));
 }
 
 /*misc*/
