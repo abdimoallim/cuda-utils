@@ -382,6 +382,10 @@ inline dim3 get_launch_params(int n, int& block_size) {
 
 /*misc*/
 
+inline void cuda_device_sync() {
+  CUDA_CHECK(cudaDeviceSynchronize());
+}
+
 inline void print_cuda_device_info() {
   int device;
   cudaGetDevice(&device);
