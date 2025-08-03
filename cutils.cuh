@@ -318,6 +318,68 @@ __device__ __forceinline__ float atomic_min_float(float* address, float val) {
   return __int_as_float(old);
 }
 
+///////////////////////////////////
+//////////   float3 ops   /////////
+///////////////////////////////////
+
+__device__ __forceinline__ float3 make_float3_uniform(float val) {
+  return make_float3(val, val, val);
+}
+
+__device__ __forceinline__ float3 operator+(const float3& a, const float3& b) {
+  return make_float3(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+
+__device__ __forceinline__ float3 operator-(const float3& a, const float3& b) {
+  return make_float3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+__device__ __forceinline__ float3 operator*(const float3& a, float s) {
+  return make_float3(a.x * s, a.y * s, a.z * s);
+}
+
+__device__ __forceinline__ float3 operator*(float s, const float3& a) {
+  return make_float3(a.x * s, a.y * s, a.z * s);
+}
+
+__device__ __forceinline__ float dot(const float3& a, const float3& b) {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+__device__ __forceinline__ float length(const float3& v) {
+  return sqrtf(dot(v, v));
+}
+
+__device__ __forceinline__ float3 normalize(const float3& v) {
+  float inv_len = __frsqrt_rn(dot(v, v));
+  return v * inv_len;
+}
+
+//////////////////////////////////////
+//////////   launch config   /////////
+//////////////////////////////////////
+
+inline dim3 get_grid_size(int n, int block_size) {
+  int grid_size = DIV_CEIL(n, block_size);
+
+  if (grid_size > MAX_GRID_SIZE) {
+      grid_size = MAX_GRID_SIZE;
+  }
+
+  return dim3(grid_size);
+}
+
+inline dim3 get_launch_params(int n, int& block_size) {
+  block_size = 256;
+
+  if (n < 256) {
+    block_size = next_power_of_two(n);
+    block_size = MAX(block_size, 32);
+  }
+
+  return get_grid_size(n, block_size);
+}
+
 /*misc*/
 
 inline void print_cuda_device_info() {
