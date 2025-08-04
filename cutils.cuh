@@ -240,6 +240,52 @@ __device__ void block_scan_exclusive(float* data) {
   }
 }
 
+template<typename T>
+__device__ T segmented_reduce(T* data, int* segments, int n, T (*op)(T, T)) {
+  int tid = threadIdx.x;
+  int segment_id = segments[tid];
+  T out = (tid < n) ? data[tid] : T(0);
+
+  for (int stride = 1; stride < blockDim.x; stride *= 2) {
+    __syncthreads();
+    int other_idx = tid + stride;
+    if (other_idx < blockDim.x
+        && other_idx < n
+        && segments[other_idx] == segment_id)
+      out = op(out, data[other_idx]);
+  }
+
+  return out;
+}
+
+template<typename T, int NUM_REDUCTIONS>
+__device__ void multi_reduce(T* values, T outputs[NUM_REDUCTIONS]) {
+  __shared__ T temp[NUM_REDUCTIONS][MAX_THREADS_PER_BLOCK];
+  int tid = threadIdx.x;
+
+  for (int i = 0; i < NUM_REDUCTIONS; i++) {
+    temp[i][tid] = values[i];
+  }
+
+  __syncthreads();
+
+  for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
+    if (tid < stride) {
+      for (int i = 0; i < NUM_REDUCTIONS; i++) {
+        temp[i][tid] += temp[i][tid + stride];
+      }
+    }
+
+    __syncthreads();
+  }
+
+  if (tid == 0) {
+    for (int i = 0; i < NUM_REDUCTIONS; i++) {
+      outputs[i] = temp[i][0];
+    }
+  }
+}
+
 /////////////////////////////////////////////////////////
 //////////   coalesced/cooperative load/store   /////////
 /////////////////////////////////////////////////////////

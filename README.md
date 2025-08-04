@@ -44,6 +44,8 @@ Refer to the [source](/cutils.cuh).
 
 - `template<typename T> __device__ T block_reduce_sum(T val)` - Two-stage block reduction using shared memory. Requires synchronization.
 - `template<typename T> __device__ T block_reduce_max(T val)` - Block max reduction. Result valid only in thread 0.
+- `template<typename T> __device__ T segmented_reduce(T* data, int* segments, int n, T (*op)(T, T))` - Reduction within segments defined by segment IDs. Only reduces elements with matching segment IDs.
+- `template<typename T, int NUM_REDUCTIONS> __device__ void multi_reduce(T* values, T outputs[NUM_REDUCTIONS])` - Performs multiple independent reductions in parallel. Results valid only in thread 0.
 
 #### Memory operations
 
